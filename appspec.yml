@@ -1,0 +1,22 @@
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /var/www/html
+hooks:
+  ApplicationStop:
+    - location: miscellaneous/codedeploy/ApplicationStop
+      timeout: 3
+      runas: root
+  BeforeInstall:
+    - location: miscellaneous/codedeploy/BeforeInstall
+      timeout: 6
+      runas: root
+  AfterInstall:
+    - location: miscellaneous/codedeploy/AfterInstall
+      timeout: 6
+      runas: root
+  ApplicationStart:
+    - location: miscellaneous/codedeploy/ApplicationStart
+      timeout: 3
+      runas: root
