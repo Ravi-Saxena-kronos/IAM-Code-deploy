@@ -6,7 +6,7 @@ files:
 hooks:
   BeforeInstall:
     - location: miscellaneous/Codedeploy/BeforeInstall.sh
-      timeout: 30
+      timeout: 300
       runas: root
   AfterInstall:
     - location: miscellaneous/Codedeploy/AfterInstall.sh
