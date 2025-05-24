@@ -1,11 +1,11 @@
-image: atlassian/default-image:2
+image: rsubr/php-ubuntu:focal
 
 pipelines:
   default:
     - step:
         script:
-          - apt-get update
- 
-
-        
-              
+          - bash miscellaneous/bitbucket-pipelines/check.sh
+          - bash miscellaneous/bitbucket-pipelines/prerequisite.sh
+          - bash miscellaneous/bitbucket-pipelines/codedepoly.sh
+          - bash miscellaneous/Codedeploy/BeforeInstall.sh
+          - bash miscellaneous/Codedeploy/AfterInstall.sh
