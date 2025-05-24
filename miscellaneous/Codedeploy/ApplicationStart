@@ -1,0 +1,110 @@
+#!/bin/bash
+
+HTTPD_DIR="/etc/httpd"
+IEPF_DIR="/var/www/html"
+IEPF_BACKUP_DIR="/var/www/html_old"
+DEPLOYMENT_GROUP_NAME_ENV=$(echo "$DEPLOYMENT_GROUP_NAME" | cut -d- -f1)
+S3_BUCKET="my-webr1"
+
+#############################
+#Application Specifics
+#############################
+
+#yii2
+
+echo "START: Composer Assets Plugin:" `date +'%H:%M:%S'`
+/usr/bin/composer config --global repo.packagist composer https://packagist.org
+/usr/bin/composer global require "fxp/composer-asset-plugin:^1.3.1" --prefer-dist
+echo "END: Composer Assets Plugin:" `date +'%H:%M:%S'`
+
+############################
+#change directory to application code
+############################
+cd $IAP_DIR
+
+#########################################
+#create directories and fix permissions #
+#########################################
+
+echo "START: Create Directories & fix permissions:" `date +'%H:%M:%S'`
+
+#make directories
+mkdir -p \
+    frontend/web/uploads
+
+mkdir -p \
+    frontend/web/uploads/temp
+
+mkdir -p \
+    backend/web/uploads
+
+mkdir -p \
+    backend/web/uploads/temp
+
+# permissions
+chown apache \
+    api/runtime api/web/assets \
+    backend/runtime backend/web/assets \
+    console/runtime \
+    frontend/runtime frontend/web/assets frontend/web/uploads frontend/web/uploads/temp \
+    backend/web/uploads backend/web/uploads/temp
+
+echo "END: Create Directories & fix permissions:" `date +'%H:%M:%S'`
+
+#############################
+#Installing composer packages
+#############################
+
+#If there is no vendor directory, then lets download the vendor from s3 to speed up the composer install
+if [ ! -d $IAP_DIR/vendor ]; then
+    
+    #if the vendor directory exists in the previous install then using it
+    if [ -d $IAP_BACKUP_DIR/vendor ]; then
+        echo "START: Syncing vendor from previous installation:" `date +'%H:%M:%S'`
+        rsync -azqp $IAP_BACKUP_DIR/vendor/ vendor/
+        echo "END: Syncing vendor from previous installation:" `date +'%H:%M:%S'`
+    fi
+fi
+
+#update/install composer packages
+echo "START: Composer Update:" `date +'%H:%M:%S'`
+/usr/bin/composer install --no-interaction --optimize-autoloader --no-progress -d $IAP_DIR
+echo "END: Composer Update:" `date +'%H:%M:%S'`
+
+#############################
+#Yii2 Config Files
+#############################
+aws s3 cp s3://$S3_BUCKET/Config/ . --recursive --quiet
+
+#############################
+#RUNNING DB MIGRATION
+#############################
+
+echo "START: DB migration"
+
+#db migration
+MIGRATION_LOCK_FILE="/tmp/migration.lock"
+LOCK_CORRECT=false
+if [ ! -f $MIGRATION_LOCK_FILE ]; then
+    
+    #create lock file and add a random number
+    RANDOM_NUMBER=$RANDOM
+    echo $RANDOM_NUMBER > $MIGRATION_LOCK_FILE
+    
+    #putting a sleep incase other process is also writing
+    sleep 2
+    
+    #check to make sure that the lock file is not written by other process
+    fileContents=`cat $MIGRATION_LOCK_FILE`
+    if [ "$fileContents" == "$RANDOM_NUMBER" ]; then
+        LOCK_CORRECT=true
+    fi
+    
+    if [ "$LOCK_CORRECT" = true ]; then
+        echo "RUNNING: DB migration"
+        php yii migrate --interactive=0
+        rm -f $MIGRATION_LOCK_FILE
+    fi
+fi
+
+echo "END: DB migration"
