@@ -1,0 +1,10 @@
+
+image: rsubr/php-ubuntu:focal
+
+pipelines:
+  default:
+    - step:
+        script:
+          - bash miscellaneous/bitbucket-pipelines/check.sh
+          - bash miscellaneous/bitbucket-pipelines/prerequisite.sh
+          - bash miscellaneous/bitbucket-pipelines/codedepoly.sh
