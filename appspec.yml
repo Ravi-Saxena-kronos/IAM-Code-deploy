@@ -10,5 +10,5 @@ hooks:
       runas: root
   AfterInstall:
     - location: miscellaneous/Codedeploy/AfterInstall.sh
-      timeout: 30
+      timeout: 300
       runas: root
