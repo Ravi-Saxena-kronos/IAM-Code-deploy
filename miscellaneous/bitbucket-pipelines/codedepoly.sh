@@ -151,7 +151,6 @@ cp -f "miscellaneous/Codedeploy/php-fpm/$DEPLOYMENT_GROUP_NAME_ENV/www.conf" /et
 echo "This is a message"
 
 
-#!/bin/bash
 
 HTTPD_DIR="/etc/httpd"
 IEPF_DIR="/var/www/html"
